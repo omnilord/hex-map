@@ -171,6 +171,6 @@ function hexProjection(radius) {
 }
 
 document.getElementById('reset').onclick = function (ev) {
-  d3.selectAll('path.fill').attr('class', null);
+  d3.selectAll('path.fill').attr('class', null).each(function (d) { d.fill = false; });
   border.call(redraw);
 };
