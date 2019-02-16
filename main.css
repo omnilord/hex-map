@@ -1,0 +1,64 @@
+body {
+  background-color: black;
+  overflow: hidden;
+  color: white;
+}
+
+.hexagon {
+  fill: black;
+  pointer-events: all;
+}
+
+.hexagon path {
+  -webkit-transition: fill 250ms linear;
+  transition: fill 250ms linear;
+}
+
+.hexagon :hover {
+  fill: lightgrey;
+}
+
+.hexagon .fill.quest {
+  fill: lightgreen;
+}
+
+.hexagon .fill.route {
+  fill: green;
+}
+
+.hexagon .fill.dock {
+  fill: blue;
+}
+
+.hexagon .fill.obstacle {
+  fill: grey;
+}
+
+.hexagon .fill.threat {
+  fill: red;
+}
+
+.hexagon .fill.player {
+  fill: yellow;
+}
+
+.mesh {
+  fill: none;
+  stroke: white;
+  stroke-opacity: .2;
+  pointer-events: none;
+}
+
+.border {
+  fill: none;
+  stroke: white;
+  stroke-opacity: .5;
+  stroke-width: 2px;
+  pointer-events: none;
+}
+
+svg text {
+  fill: white;
+  font-family: FontAwesome;
+  pointer-events: none;
+}
