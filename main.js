@@ -56,42 +56,41 @@ border = svg.append('path')
 
 svg.selectAll('path').each(function (d) {
   var box = this.getBBox(),
-      angle = 180 * Math.floor(Math.random() * 2), //60 * (Math.floor(Math.random() * 6)),
-      x, y;
+      angle = 60 * Math.floor(Math.random() * 6),
+      x = (box.width / 2) + (box.x),
+      y = (box.height / 2) + (box.y),
+      dx, dy;
+
   switch (angle) {
- /* 
     case 60:
-      x = x + box.x;
-      y = y + box.y;
+      dx = 2;
+      dy = 3;
       break;
     case 120:
-      x = x + box.x;
-      y = y + box.y;
+      dx = 1;
+      dy = 3;
       break;
-    */
     case 180:
-      x = (box.width / 2) - (box.x + 2 * radius) + 5;
-      y = (box.height / 2) - (box.y + 2 * radius) + 5;
+      dx = 0;
+      dy = 2.5;
       break;
-    /*
     case 240:
-      x = x + box.x;
-      y = y + box.y;
+      dx = 1;
+      dy = 3;
       break;
     case 300:
-      x = x + box.x;
-      y = y + box.y;
+      dx = 0;
+      dy = 4;
       break;
-  */ 
     default:
-      x = (box.width / 2) + (box.x);
-      y = (box.height / 2) + (box.y) + 5;
+      dx = 0;
+      dy = 5;
   }
   g.append('text')
     .attr('text-anchor', 'middle')
-    .attr('x', x)
-    .attr('y', y)
-    .attr('transform', 'rotate(' + angle + ')')
+    .attr('x', x + dx)
+    .attr('y', y + dy)
+    .attr('transform', `rotate(${angle} ${x - (dx / 2)} ${y - (dy / 2)})`)
     .text('\uf0fb');
 });
 
