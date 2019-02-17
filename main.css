@@ -18,27 +18,27 @@ body {
   fill: lightgrey;
 }
 
-.hexagon .fill.quest {
+.hexagon .highlight.quest {
   fill: lightgreen;
 }
 
-.hexagon .fill.route {
+.hexagon .highlight.route {
   fill: green;
 }
 
-.hexagon .fill.dock {
+.hexagon .highlight.dock {
   fill: blue;
 }
 
-.hexagon .fill.obstacle {
+.hexagon .highlight.obstacle {
   fill: grey;
 }
 
-.hexagon .fill.threat {
+.hexagon .highlight.threat {
   fill: red;
 }
 
-.hexagon .fill.player {
+.hexagon .highlight.player {
   fill: yellow;
 }
 
@@ -59,6 +59,13 @@ body {
 
 svg text {
   fill: white;
+  font-family: FontAwesome;
+  font-size: 12pt;
+  pointer-events: none;
+}
+
+svg text.highlight {
+  fill: blue;
   font-family: FontAwesome;
   pointer-events: none;
 }

@@ -7,28 +7,25 @@ var radius = 20,
     projection = hexProjection(radius),
     path = d3.geo.path().projection(projection),
     svg = d3.select('body').append('svg')
-      .attr('viewBox', '40 20 ' + (width - 3 * radius) + ' ' + (height - 3 * radius))
-      .attr('width', width)
-      .attr('height', height),
+      .attr('viewBox', '-20 -20 ' + width + ' ' + height)
+      .attr('width', width - radius)
+      .attr('height', height - radius),
     g = svg.append('g'),
     border,
     flight_plan = [], current_cell;
 
 g.attr('class', 'hexagon')
-  .selectAll('path')
-    .data(topology.objects.hexagons.geometries)
+  .selectAll('path').data(topology.objects.hexagons.geometries)
   .enter().append('path')
-    .attr('d', function (d) { return path(topojson.feature(topology, d)); })
-    .attr('class', function (d) {
-      var cls =  d.fill ? 'fill' : null;
-      return cls;
-    })
+    .attr('d', (d) => path(topojson.feature(topology, d)))
+    .attr('class', (d) =>  d.fill ? 'highlight' : null)
     .on('mousedown', function (d) {
       mousing = d.fill ? -1 : +1;
       toggleCell.apply(this, arguments);
       flight_plan.push(this);
     })
-    .on('mouseenter', function () {
+    .on('mouseenter', function (d) {
+      d.glyph.classed('showme', true);
       if (mousing) {
         toggleCell.apply(this, arguments);
         if (~flight_plan[flight_plan.length - 1] === this) {
@@ -38,7 +35,10 @@ g.attr('class', 'hexagon')
         }
       }
     })
-    .on('mouseup', function () {
+    .on('mouseout', function (d) {
+      d.glyph.classed('showme', false);
+    })
+    .on('mouseup', function (d) {
       mousing = 0;
 
       console.log(`path takes your ship through ${flight_plan.length} sectors.`);
@@ -55,6 +55,9 @@ border = svg.append('path')
     .call(redraw);
 
 svg.selectAll('path').each(function (d) {
+  if (!d || !d.is_hex) {
+    return
+  }
   var box = this.getBBox(),
       angle = 60 * Math.floor(Math.random() * 6),
       x = (box.width / 2) + (box.x),
@@ -75,18 +78,18 @@ svg.selectAll('path').each(function (d) {
       dy = 2.5;
       break;
     case 240:
-      dx = 1;
-      dy = 3;
+      dx = -0.5;
+      dy = 2.75;
       break;
     case 300:
-      dx = 0;
-      dy = 4;
+      dx = -1;
+      dy = 3.5;
       break;
     default:
       dx = 0;
       dy = 5;
   }
-  g.append('text')
+  d.glyph = g.append('text')
     .attr('text-anchor', 'middle')
     .attr('x', x + dx)
     .attr('y', y + dy)
@@ -94,24 +97,23 @@ svg.selectAll('path').each(function (d) {
     .text('\uf0fb');
 });
 
-
 function toggleCell(d) {
   if (mousing) {
     var cls = fillClasses[Math.floor(Math.random() * fillClasses.length)];
-    d3.select(this).classed(`fill ${cls}`, d.fill = mousing > 0);
+    d3.select(this).classed(`highlight ${cls}`, d.fill = mousing > 0);
     border.call(redraw);
   }
 }
 
 function redraw(border) {
-  border.attr('d', path(topojson.mesh(topology, topology.objects.hexagons, function (a, b) { return a.fill ^ b.fill; })));
+  border.attr('d', path(topojson.mesh(topology, topology.objects.hexagons, (a, b) => a.fill ^ b.fill)));
 }
 
 function hexTopology(radius, width, height) {
   var dx = (radius * 2 * Math.sin(Math.PI / 3)),
       dy = radius * 1.5,
-      m = Math.ceil((height + radius) / dy) - 1,
-      n = Math.ceil(width / dx) - 1,
+      m = Math.ceil(1.4 * (height + radius) / dy) - 2,
+      n = Math.ceil(1.4 * width / dx) - 3,
       geometries = [],
       arcs = [],
       i, j, q, x, y;
@@ -131,6 +133,7 @@ function hexTopology(radius, width, height) {
   for (j = 0, q = 3; j < m; ++j, q += 6) {
     for (i = 0; i < n; ++i, q += 3) {
       geometries.push({
+        is_hex: true,
         type: 'Polygon',
         arcs: [
           [
@@ -142,6 +145,7 @@ function hexTopology(radius, width, height) {
             ~(q - (n + 2 + (j & 1)) * 3 + 2)
           ]
         ],
+        glyph: null,
         fill: false // Math.random() > i / n * 2,
       });
     }
@@ -160,17 +164,17 @@ function hexProjection(radius) {
   return {
     stream: function (stream) {
       return {
-        point: function (x, y) { stream.point(x * dx / 2, (y - (2 - (y & 1)) / 3) * dy / 2); },
-        lineStart: function () { stream.lineStart(); },
-        lineEnd: function () { stream.lineEnd(); },
-        polygonStart: function () { stream.polygonStart(); },
-        polygonEnd: function () { stream.polygonEnd(); }
+        point: (x, y) => { stream.point(x * dx / 3, (y - (2 - (y & 1)) / 3) * dy / 3); },
+        lineStart: () => { stream.lineStart(); },
+        lineEnd: () => { stream.lineEnd(); },
+        polygonStart: () => { stream.polygonStart(); },
+        polygonEnd: () => { stream.polygonEnd(); }
       };
     }
   };
 }
 
 document.getElementById('reset').onclick = function (ev) {
-  d3.selectAll('path.fill').attr('class', null).each(function (d) { d.fill = false; });
+  d3.selectAll('path.highlight').attr('class', null).each((d) => d.fill = false);
   border.call(redraw);
 };
