@@ -65,7 +65,7 @@ svg text {
 }
 
 svg text.highlight {
-  fill: blue;
+  fill: black;
   font-family: FontAwesome;
   pointer-events: none;
 }

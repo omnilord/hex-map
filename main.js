@@ -3,13 +3,13 @@ var radius = 20,
     height = window.innerHeight,
     mousing = 0,
     fillClasses = ['route', 'dock', 'obstacle', 'threat', 'player', 'quest'],
-    topology = hexTopology(radius, width, height),
+    topology = hexTopology(radius, width - radius, height - radius),
     projection = hexProjection(radius),
     path = d3.geo.path().projection(projection),
     svg = d3.select('body').append('svg')
-      .attr('viewBox', '-20 -20 ' + width + ' ' + height)
-      .attr('width', width - radius)
-      .attr('height', height - radius),
+      .attr('viewBox', `-20 -15 ${width} ${height}`)
+      .attr('width', width)
+      .attr('height', height),
     g = svg.append('g'),
     border,
     flight_plan = [], current_cell;
@@ -20,12 +20,19 @@ g.attr('class', 'hexagon')
     .attr('d', (d) => path(topojson.feature(topology, d)))
     .attr('class', (d) =>  d.fill ? 'highlight' : null)
     .on('mousedown', function (d) {
+      if (!d || !d.is_hex || d.y == 0) {
+        return
+      }
       mousing = d.fill ? -1 : +1;
       toggleCell.apply(this, arguments);
       flight_plan.push(this);
     })
     .on('mouseenter', function (d) {
-      d.glyph.classed('showme', true);
+      if (!d || !d.is_hex || d.y == 0) {
+        return
+      }
+      console.log([d.x, d.y]);
+      d.glyph.classed('highlight', true);
       if (mousing) {
         toggleCell.apply(this, arguments);
         if (~flight_plan[flight_plan.length - 1] === this) {
@@ -36,9 +43,15 @@ g.attr('class', 'hexagon')
       }
     })
     .on('mouseout', function (d) {
-      d.glyph.classed('showme', false);
+      if (!d || !d.is_hex || d.y == 0) {
+        return
+      }
+      d.glyph.classed('highlight', false);
     })
     .on('mouseup', function (d) {
+      if (!d || !d.is_hex || d.y == 0) {
+        return
+      }
       mousing = 0;
 
       console.log(`path takes your ship through ${flight_plan.length} sectors.`);
@@ -55,7 +68,7 @@ border = svg.append('path')
     .call(redraw);
 
 svg.selectAll('path').each(function (d) {
-  if (!d || !d.is_hex) {
+  if (!d || !d.is_hex || d.y == 0) {
     return
   }
   var box = this.getBBox(),
@@ -145,6 +158,8 @@ function hexTopology(radius, width, height) {
             ~(q - (n + 2 + (j & 1)) * 3 + 2)
           ]
         ],
+        x: i,
+        y: j,
         glyph: null,
         fill: false // Math.random() > i / n * 2,
       });
