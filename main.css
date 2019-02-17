@@ -62,6 +62,7 @@ svg text {
   font-family: FontAwesome;
   font-size: 12pt;
   pointer-events: none;
+  user-select: none;
 }
 
 svg text.highlight {
