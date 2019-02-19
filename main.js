@@ -12,7 +12,7 @@ var radius = 20,
       .attr('height', height),
     g = svg.append('g'),
     border,
-    flight_plan = [], current_cell;
+    flight_plan = [];
 
 g.attr('class', 'hexagon')
   .selectAll('path').data(topology.objects.hexagons.geometries)
@@ -20,22 +20,18 @@ g.attr('class', 'hexagon')
     .attr('d', (d) => path(topojson.feature(topology, d)))
     .attr('class', (d) =>  d.fill ? 'highlight' : null)
     .on('mousedown', function (d) {
-      if (!d || !d.is_hex || d.y == 0) {
-        return
-      }
+      if (!captureClick(d, 2)) { return; }
+      reset();
       mousing = d.fill ? -1 : +1;
       toggleCell.apply(this, arguments);
       flight_plan.push(this);
     })
     .on('mouseenter', function (d) {
-      if (!d || !d.is_hex || d.y == 0) {
-        return
-      }
-      console.log([d.x, d.y]);
+      if (!captureClick(d, 2)) { return; }
       d.glyph.classed('highlight', true);
       if (mousing) {
         toggleCell.apply(this, arguments);
-        if (~flight_plan[flight_plan.length - 1] === this) {
+        if (flight_plan[flight_plan.length - 2] === this) {
           flight_plan.pop();
         } else {
           flight_plan.push(this);
@@ -43,19 +39,19 @@ g.attr('class', 'hexagon')
       }
     })
     .on('mouseout', function (d) {
-      if (!d || !d.is_hex || d.y == 0) {
-        return
-      }
+      if (!captureClick(d, 2)) { return; }
       d.glyph.classed('highlight', false);
     })
     .on('mouseup', function (d) {
-      if (!d || !d.is_hex || d.y == 0) {
-        return
-      }
+      if (!captureClick(d, 2)) { return; }
       mousing = 0;
 
       console.log(`path takes your ship through ${flight_plan.length} sectors.`);
       console.log(flight_plan);
+    })
+    .on("contextmenu", function (d, i) {
+      d3.event.preventDefault();
+      // TODO: Add Custom Context Menu for interacting with hex cell
     });
 
 svg.append('path')
@@ -109,6 +105,10 @@ svg.selectAll('path').each(function (d) {
     .attr('transform', `rotate(${angle} ${x - (dx / 2)} ${y - (dy / 2)})`)
     .text('\uf0fb');
 });
+
+function captureClick(d, btnN) {
+  return !d || !d.is_hex || d.y == 0 || d3.event.button != btnN;
+}
 
 function toggleCell(d) {
   if (mousing) {
@@ -189,7 +189,7 @@ function hexProjection(radius) {
   };
 }
 
-document.getElementById('reset').onclick = function (ev) {
+function reset(ev) {
   d3.selectAll('path.highlight').attr('class', null).each((d) => d.fill = false);
   border.call(redraw);
 };

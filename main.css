@@ -70,3 +70,17 @@ svg text.highlight {
   font-family: FontAwesome;
   pointer-events: none;
 }
+
+#onionskin {
+  background-color: rgba(100, 100, 100, 0.5);
+  color: blue;
+  text-align: center;
+  vertical-align: middle;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  margin: auto auto auto auto;
+  position: fixed;
+  z-index: 1000000;
+}
