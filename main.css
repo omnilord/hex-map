@@ -57,7 +57,7 @@ body {
   pointer-events: none;
 }
 
-svg text {
+.sprites text {
   fill: white;
   font-family: FontAwesome;
   font-size: 12pt;
@@ -65,7 +65,7 @@ svg text {
   user-select: none;
 }
 
-svg text.highlight {
+.sprites text.highlight {
   fill: black;
   font-family: FontAwesome;
   pointer-events: none;

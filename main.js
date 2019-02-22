@@ -10,15 +10,19 @@ var radius = 20,
       .attr('viewBox', `-20 -15 ${width} ${height}`)
       .attr('width', width)
       .attr('height', height),
-    g = svg.append('g'),
-    border,
+    g_hex = svg.append('g').attr('class', 'hexagon'),
+    g_text = svg.append('g').attr('class', 'sprites'),
+    border, last_cell, current_cell,
     flight_plan = [];
 
-g.attr('class', 'hexagon')
+g_hex
   .selectAll('path').data(topology.objects.hexagons.geometries)
   .enter().append('path')
     .attr('d', (d) => path(topojson.feature(topology, d)))
     .attr('class', (d) =>  d.fill ? 'highlight' : null)
+    .on('click', function (d) {
+      console.log(d.x, d.y, d.q);
+    })
     .on('mousedown', function (d) {
       if (!captureClick(d, 2)) { return; }
       reset();
@@ -28,7 +32,7 @@ g.attr('class', 'hexagon')
     })
     .on('mouseenter', function (d) {
       if (!captureClick(d, 2)) { return; }
-      d.glyph.classed('highlight', true);
+      highlight_sprite(d3.select(d.sprite_id), true);
       if (mousing) {
         toggleCell.apply(this, arguments);
         if (flight_plan[flight_plan.length - 2] === this) {
@@ -40,14 +44,14 @@ g.attr('class', 'hexagon')
     })
     .on('mouseout', function (d) {
       if (!captureClick(d, 2)) { return; }
-      d.glyph.classed('highlight', false);
+      highlight_sprite(d3.select(d.sprite_id), false);
     })
     .on('mouseup', function (d) {
       if (!captureClick(d, 2)) { return; }
       mousing = 0;
 
-      console.log(`path takes your ship through ${flight_plan.length} sectors.`);
-      console.log(flight_plan);
+      //console.log(`path takes your ship through ${flight_plan.length} sectors.`);
+      //console.log(flight_plan);
     })
     .on("contextmenu", function (d, i) {
       d3.event.preventDefault();
@@ -63,13 +67,8 @@ border = svg.append('path')
     .attr('class', 'border')
     .call(redraw);
 
-svg.selectAll('path').each(function (d) {
-  if (!d || !d.is_hex || d.y == 0) {
-    return
-  }
-  var box = this.getBBox(),
-      angle = 60 * Math.floor(Math.random() * 6),
-      x = (box.width / 2) + (box.x),
+function sprite_rotation_offset(box, angle) {
+  var x = (box.width / 2) + (box.x),
       y = (box.height / 2) + (box.y),
       dx, dy;
 
@@ -98,13 +97,45 @@ svg.selectAll('path').each(function (d) {
       dx = 0;
       dy = 5;
   }
-  d.glyph = g.append('text')
+
+  return { angle: angle, x: x, y: y, dx: dx, dy: dy };
+}
+
+function draw_sprite(text, d, angle) {
+  if (!d || !d.is_hex || d.y == 0) {
+    return;
+  }
+  var box = this.getBBox(),
+      //angle = 60 * Math.floor(Math.random() * 6),
+      offset = sprite_rotation_offset(box, angle),
+      rx = offset.x - (offset.dx / 2),
+      ry = offset.y - (offset.dy / 2),
+      id = `ship-x${d.x}-y${d.y}`;
+
+  d.sprite_id = `#${id}`;
+  d.coords = [offset.x, offset.y];
+  d.sprite =  g_text.append('text')
+    .classed('ship', true)
+    .attr('id', id)
     .attr('text-anchor', 'middle')
-    .attr('x', x + dx)
-    .attr('y', y + dy)
-    .attr('transform', `rotate(${angle} ${x - (dx / 2)} ${y - (dy / 2)})`)
-    .text('\uf0fb');
-});
+    .attr('x', offset.x + offset.dx)
+    .attr('y', offset.y + offset.dy)
+    .attr('transform', `rotate(${angle} ${rx} ${ry})`)
+    .text(text); // '\uf0fb'
+  return d.sprite;
+}
+
+function highlight_sprite(sprite, toggle) {
+  if (sprite) {
+    sprite.classed('highlight', toggle);
+  }
+}
+
+function remove_sprite(sprite) {
+  if (sprite) {
+    d3.select(sprite).remove();
+  }
+}
 
 function captureClick(d, btnN) {
   return !d || !d.is_hex || d.y == 0 || d3.event.button != btnN;
@@ -112,9 +143,40 @@ function captureClick(d, btnN) {
 
 function toggleCell(d) {
   if (mousing) {
-    var cls = fillClasses[Math.floor(Math.random() * fillClasses.length)];
+    var cls = fillClasses[Math.floor(Math.random() * fillClasses.length)],
+        angle = 0, dx, dy, offset, rx, ry, sprite;
+
     d3.select(this).classed(`highlight ${cls}`, d.fill = mousing > 0);
     border.call(redraw);
+
+    if (last_cell) {
+      // Transform based on last cell->new cell vector
+      dx = last_cell.d.x - d.x + (d.y % 2);
+      dy = last_cell.d.y - d.y;
+      if (dx <= 0 && dy == 0) { // should be in else later
+        angle = 0;
+      } else if (dx > 0 && dy == 0) {
+        angle = 180;
+      } else if (dx > 0 && dy < 0) {
+        angle = 120;
+      } else if (dx <= 0 && dy < 0) {
+        angle = 60;
+      } else if (dx > 0 && dy > 0) {
+        angle = 240;
+      } else if (dx <= 0 && dy > 0) {
+        angle = 300;
+      }
+      remove_sprite(last_cell.d.sprite_id);
+      draw_sprite.call(last_cell.cell, '\uf0fb', last_cell.d, angle);
+    }
+
+    if (d.sprite) {
+      remove_sprite(d.sprite_id);
+    }
+
+    sprite = draw_sprite.call(this, '\uf0fb', d, angle);
+    highlight_sprite(sprite, true);
+    last_cell = { d: d, cell: this };
   }
 }
 
@@ -160,7 +222,8 @@ function hexTopology(radius, width, height) {
         ],
         x: i,
         y: j,
-        glyph: null,
+        q: q,
+        sprite: null,
         fill: false // Math.random() > i / n * 2,
       });
     }
@@ -190,6 +253,7 @@ function hexProjection(radius) {
 }
 
 function reset(ev) {
-  d3.selectAll('path.highlight').attr('class', null).each((d) => d.fill = false);
+  last_cell = null;
+  d3.selectAll('path.highlight').attr('class', null).each((d) => { d.fill = false; remove_sprite(d.sprite_id); });
   border.call(redraw);
 };
